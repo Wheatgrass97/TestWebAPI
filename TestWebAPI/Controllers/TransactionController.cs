@@ -2,6 +2,8 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TestWebAPI.Models;
+using TestWebAPI.Classes.ResponseClasses;
+using System.Text.Json;
 
 namespace TestWebAPI.Controllers
 {
@@ -26,7 +28,22 @@ namespace TestWebAPI.Controllers
         [HttpGet("ByCurrency")]
         public string GetAllByCurrency(string currencyCode)
         {
-            return "";
+            var dbTransactions = _context.Transactions.Where(x=> x.CurrencyCode == currencyCode).ToList();
+            var transactions = new Transactions
+            {
+                transactionList = dbTransactions.Select(t => new Classes.ResponseClasses.Transaction
+                {
+                    Code = t.Code,
+                    Payment = t.Amount + " " + t.CurrencyCode.ToString(),
+                    Status = t.Status
+                }).ToList()
+            };
+
+            string json = JsonSerializer.Serialize(transactions, new JsonSerializerOptions
+            {
+                WriteIndented = true // for pretty-printing
+            });
+            return json;
         }
 
         [HttpGet("ByDateRange")]

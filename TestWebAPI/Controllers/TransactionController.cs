@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Mvc;
 using TestWebAPI.Models;
 using TestWebAPI.Classes.ResponseClasses;
 using TestWebAPI.Helpers;
@@ -22,8 +20,22 @@ namespace TestWebAPI.Controllers
         [HttpGet]
         public string GetAll()
         {
-            var transaction = _context.Transactions.ToList();
-            return "";
+            var dbTransactions = _context.Transactions.ToList();
+            var transactions = new Transactions
+            {
+                transactionList = dbTransactions.Select(t => new Classes.ResponseClasses.Transaction
+                {
+                    Code = t.Code,
+                    Payment = t.Amount + " " + t.CurrencyCode.ToString(),
+                    Status = TransactionStatusHelper.TsConvertToStr(t.Status)
+                }).ToList()
+            };
+
+            string json = JsonSerializer.Serialize(transactions, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+            return json;
         }
 
         [HttpGet("ByCurrency")]
@@ -36,7 +48,7 @@ namespace TestWebAPI.Controllers
                 {
                     Code = t.Code,
                     Payment = t.Amount + " " + t.CurrencyCode.ToString(),
-                    Status = TransactionStatusHelper.TransactionStatusConverter(t.Status)
+                    Status = TransactionStatusHelper.TsConvertToStr(t.Status)
                 }).ToList()
             };
 
@@ -49,16 +61,56 @@ namespace TestWebAPI.Controllers
 
         [HttpGet("ByDateRange")]
 
-        public string GetAllByDateRange(string date)
+        public string GetAllByDateRange(string dateFrom, string dateTo)
         {
-            return "";
+            DateTime dateFromParsed;
+            DateTime dateToParsed;
+            
+            if (!DateTime.TryParse(dateFrom, out dateFromParsed) || !DateTime.TryParse(dateTo, out dateToParsed))
+            {
+                return "Invalid date format. Please use a valid date format.";
+            }
+           
+            var dbTransactions = _context.Transactions
+                .Where(x => x.CreatedDate >= dateFromParsed && x.CreatedDate <= dateToParsed.Date.AddDays(1).AddTicks(-1))
+                .ToList();
+            var transactions = new Transactions
+            {
+                transactionList = dbTransactions.Select(t => new Classes.ResponseClasses.Transaction
+                {
+                    Code = t.Code,
+                    Payment = t.Amount + " " + t.CurrencyCode.ToString(),
+                    Status = TransactionStatusHelper.TsConvertToStr(t.Status)
+                }).ToList()
+            };
+            string json = JsonSerializer.Serialize(transactions, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+            return json;
         }
-
+     
         [HttpGet("ByStatus")]
 
         public string GetAllByStatus(string status)
         {
-            return "";
+            int statusInt = TransactionStatusHelper.TsConvertToInt(status);
+            var dbTransactions = _context.Transactions.Where(x => x.Status == statusInt).ToList();
+            var transactions = new Transactions
+            {
+                transactionList = dbTransactions.Select(t => new Classes.ResponseClasses.Transaction
+                {
+                    Code = t.Code,
+                    Payment = t.Amount + " " + t.CurrencyCode.ToString(),
+                    Status = TransactionStatusHelper.TsConvertToStr(t.Status)
+                }).ToList()
+            };
+
+            string json = JsonSerializer.Serialize(transactions, new JsonSerializerOptions
+            {
+                WriteIndented = true
+            });
+            return json;
         }
     }
 }

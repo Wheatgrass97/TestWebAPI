@@ -25,6 +25,6 @@ namespace TestWebAPI.Classes.ResponseClasses
         //public DateTime CreatedDate { get; set; }
 
         [JsonPropertyName("Status")]
-        public int Status { get; set; }
+        public string Status { get; set; }
     }
 }
